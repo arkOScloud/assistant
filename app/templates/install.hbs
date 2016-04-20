@@ -1,0 +1,14 @@
+<div class="aa-install-header">
+  <div class="container">
+    <h1>Install arkOS</h1>
+  </div>
+</div>
+<div class="container">
+  {{outlet}}
+</div>
+<div class="aa-install-buttons">
+  <div class="container">
+    <a href="#" class="btn btn-default pull-left {{if disableBack 'disabled'}}" {{action 'wizardPrev'}}><i class="fa fa-chevron-circle-left"></i> Go Back</a>
+    <a href="#" class="btn btn-default pull-right {{if disableNext 'disabled'}}" {{action 'wizardNext'}}>Next <i class="fa fa-chevron-circle-right"></i></a>
+  </div>
+</div>

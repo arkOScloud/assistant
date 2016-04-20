@@ -1,0 +1,24 @@
+{{#if isSplitBoot}}
+<p>First, select the SD card device to install the <strong>boot</strong> image to. Then select the USB/external drive to install the <strong>data</strong> image to.</p>
+{{else}}
+<p>Select the SD card device to install the image to.</p>
+{{/if}}
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th width=1></th>
+      <th>Name</th>
+      <th>Device</th>
+      <th>Size</th>
+      <th>Selected For</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each devices as |dev|}}
+      <tr class="aa-devices {{if dev.selectedFor 'aa-devices-active'}}" {{action 'selectDevice' dev}}><td><i class="fa fa-fw fa-hdd-o"></i></td><td>{{ dev.description }}</td><td>{{ dev.device }}</td><td>{{ dev.size }}</td><td>{{ dev.selectedFor }}</td></tr>
+    {{else}}
+      <tr><td colspan=5 class="text-center"><i class="fa fa-fw fa-cog fa-spin"></i> Searching...</td></tr>
+    {{/each}}
+  </tbody>
+</table>

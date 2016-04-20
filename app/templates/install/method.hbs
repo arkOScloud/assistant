@@ -1,0 +1,15 @@
+<p>Select the method for installing arkOS to your <strong>{{ selectedHardware.name }}</strong>.</p>
+<br />
+
+<table class="aa-install-menu aa-install-method-menu">
+  <tr class="aa-install-button {{if isSplitBoot '' 'active'}}" {{action 'selectInstallType' 'default'}}>
+    <td class="aa-install-button-icon"><i class="fa fa-fw fa-4x {{if isSplitBoot 'fa-circle-o' 'fa-check-circle-o'}}"></i></td>
+    <td><h3 class="aa-main-button-header">Default</h3><p class="aa-main-button-text">Installs the whole operating system to one connected SD card.</p></td>
+    <td class="aa-install-button-icon"><i class="pull-right fa fa-fw fa-4x fa-caret-square-o-right"></i></td>
+  </tr>
+  <tr class="aa-install-button {{if isSplitBoot 'active'}}" {{action 'selectInstallType' 'split'}}>
+    <td class="aa-install-button-icon"><i class="fa fa-fw fa-4x {{if isSplitBoot 'fa-check-circle-o' 'fa-circle-o'}}"></i></td>
+    <td><h3 class="aa-main-button-header">Split Boot/Data</h3><p class="aa-main-button-text">Installs the operating system to an external USB drive. The SD card is only used for booting.</p></td>
+    <td class="aa-install-button-icon"><i class="pull-right fa fa-fw fa-4x fa-usb"></i></td>
+  </tr>
+</table>

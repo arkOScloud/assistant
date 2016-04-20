@@ -1,0 +1,11 @@
+<p>Select the hardware that will be used to run your arkOS server below.</p>
+
+<table class="aa-install-menu aa-install-hardware-menu">
+  {{#each hardware as |hw|}}
+    <tr class="aa-install-button {{if hw.isSelected '' 'active'}}" {{action 'selectHardware' hw}}>
+      <td class="aa-install-button-icon"><i class="fa fa-fw fa-2x {{if hw.isSelected 'fa-check-circle-o' 'fa-circle-o'}}"></i></td>
+      <td><h4 class="aa-install-button-header">{{hw.name}}</h4></td>
+      <td class="aa-install-button-icon"><img src={{ hw.logo }} /></td>
+    </tr>
+  {{/each}}
+</table>

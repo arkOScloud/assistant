@@ -1,0 +1,10 @@
+<p>Select the nearest download mirror to obtain the disk image from.</p>
+
+<table class="aa-install-menu aa-install-mirror-menu">
+  {{#each mirrors as |mi|}}
+    <tr class="aa-install-button {{if mi.isSelected '' 'active'}}" {{action 'selectMirror' mi}}>
+      <td class="aa-install-button-icon"><i class="fa fa-fw fa-2x {{if mi.isSelected 'fa-check-circle-o' 'fa-circle-o'}}"></i></td>
+      <td><h4 class="aa-install-button-header">{{mi.name}}</h4></td>
+    </tr>
+  {{/each}}
+</table>

@@ -1,6 +1,7 @@
 /*jshint node:true*/
 /* global require, module */
 var EmberApp = require('ember-cli/lib/broccoli/ember-app');
+var Funnel = require('broccoli-funnel');
 
 module.exports = function(defaults) {
   var app = new EmberApp(defaults, {
@@ -20,5 +21,33 @@ module.exports = function(defaults) {
   // please specify an object with the list of modules as keys
   // along with the exports of each module as its value.
 
-  return app.toTree();
+  app.import("bower_components/font-awesome/css/font-awesome.css");
+  app.import("bower_components/fira/fira.css");
+  app.import('bower_components/bootstrap/dist/js/bootstrap.js');
+  app.import('bower_components/bootstrap/dist/css/bootstrap.css');
+  app.import('bower_components/bootstrap/dist/css/bootstrap.css.map', {
+    destDir: 'assets'
+  });
+  var fontAwesome = new Funnel('bower_components/font-awesome/fonts', {
+      srcDir: '/',
+      destDir: 'fonts'
+  });
+  var firaEot = new Funnel('bower_components/fira/eot', {
+      srcDir: '/',
+      destDir: 'assets/eot'
+  });
+  var firaOtf = new Funnel('bower_components/fira/otf', {
+      srcDir: '/',
+      destDir: 'assets/otf'
+  });
+  var firaTtf = new Funnel('bower_components/fira/ttf', {
+      srcDir: '/',
+      destDir: 'assets/ttf'
+  });
+  var firaWoff = new Funnel('bower_components/fira/woff', {
+      srcDir: '/',
+      destDir: 'assets/woff'
+  });
+
+  return app.toTree([fontAwesome, firaEot, firaOtf, firaTtf, firaWoff]);
 };

@@ -1,0 +1,45 @@
+<div class="aa-install-header">
+  <div class="container">
+    {{#if isSearching}}
+      <h1><i class="fa fa-fw fa-cog fa-spin"></i> Searching...</h1>
+    {{else}}
+      {{#if servers}}
+        <h1>{{ servers.length }} server(s) found.</h1>
+      {{else}}
+        <h1>No servers found.</h1>
+      {{/if}}
+    {{/if}}
+  </div>
+</div>
+<div class="container">
+  {{#if isSearching}}
+  {{else}}
+    {{#if servers}}
+    {{else}}
+      <div class="aa-search text-center">
+        <h1><i class="fa fa-times-circle fa-fw fa-4x"></i></h1>
+        <p>Make sure your server is on and properly connected to your network.</p>
+        <br />
+        <a href="#" class="btn btn-default" {{action 'openPage' 'index'}}><i class="fa fa-chevron-circle-left"></i> Go Back</a> <a href="#" class="btn btn-default" {{action 'refresh'}}><i class="fa fa-refresh"></i> Refresh</a>
+      </div>
+    {{/if}}
+  {{/if}}
+  <br />
+  <div class="aa-main-menu">
+    {{#each servers as |server|}}
+      <div class="aa-main-button" {{action 'openGenesis' server.httpAddr}}>
+        <p class="aa-main-button-icon pull-left"><i class="fa fa-fw fa-4x fa-external-link"></i></p>
+        <h3 class="aa-main-button-header">{{ server.host }}</h3>
+        <p class="aa-main-button-text">arkOS server at {{ server.host }}:{{ server.port }}</p>
+      </div>
+    {{/each}}
+  </div>
+</div>
+{{#if servers}}
+<div class="aa-install-buttons">
+  <div class="container">
+    <a href="#" class="btn btn-default pull-left" {{action 'openPage' 'index'}}><i class="fa fa-chevron-circle-left"></i> Go Back</a>
+    <a href="#" class="btn btn-default pull-right {{if isSearching 'disabled'}}" {{action 'refresh'}}><i class="fa fa-refresh"></i> Refresh</a>
+  </div>
+</div>
+{{/if}}

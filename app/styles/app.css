@@ -1,0 +1,129 @@
+html, body, h1, h2, h3, h4, h5, h6, p, a, span {
+  height: 100%;
+  font-family: 'Lato', 'Helvetica Neue', 'Helvetica', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 300;
+}
+
+body {
+  height: 100%;
+  background-color: #FFF;
+}
+
+body > .ember-view {
+    height: 100%;
+}
+
+.aa-main-page {
+  height: 100%;
+  color: #FFF;
+  background: url('../img/arkos-bkg.png') repeat;
+}
+
+hr {
+  margin-top: 34px;
+  margin-bottom: 40px;
+  border-top: solid 2px #FFF;
+}
+
+.aa-main-logo {
+  width: 400px;
+  margin-top: 60px;
+}
+
+.aa-main-button, .aa-install-button {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0);
+}
+
+.aa-main-button:hover {
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.aa-main-menu, .aa-install-menu {
+  width: 100%;
+}
+
+.aa-main-button td, .aa-install-button td {
+  padding: 10px;
+}
+
+.aa-install-button:hover {
+  cursor: pointer;
+  background-color: #e6e6e6;
+}
+
+.aa-install-button-header {
+  margin-top: 9px;
+}
+
+.aa-main-button-header, .aa-install-method-menu .aa-install-button-header {
+  margin-top: 0;
+}
+
+.aa-main-button-icon, .aa-install-button-icon {
+  width: 25px;
+  margin-top: 3px;
+  margin-right: 25px;
+}
+
+.aa-install-button-icon {
+  color: #004b90;
+}
+
+.aa-install {
+  margin-bottom: 60px;
+}
+
+.aa-install-header {
+  background: url('../img/arkos-bkg.png') repeat;
+  color: #FFF;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.aa-install-header h1 {
+  margin-top: 17px;
+  margin-bottom: 13px;
+}
+
+.aa-install-buttons {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 60px;
+}
+
+.aa-install-hw img {
+  margin-right: 5px;
+}
+
+.aa-devices {
+  cursor: pointer;
+}
+
+.aa-devices-active, .table-hover .aa-devices-active:hover {
+  background-color: #004b90;
+  color: #FFF;
+}
+
+.aa-progress {
+  margin-left: auto;
+  margin-right: auto;
+  width: 90%;
+  position: fixed;
+  bottom: 30px;
+}
+
+.aa-search {
+  margin-top: 80px;
+}
+
+.btn {
+    padding: 10px 15px;
+    line-height: 1;
+    border-radius: 0;
+}

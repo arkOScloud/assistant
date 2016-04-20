@@ -1,7 +1,7 @@
 {
-  "name": "assistant",
-  "version": "0.0.0",
-  "description": "Small description for assistant goes here",
+  "name": "arkos-assistant",
+  "version": "1.0.0",
+  "description": "Installer and client utility app for arkOS",
   "private": true,
   "directories": {
     "doc": "doc",
@@ -20,6 +20,10 @@
   "license": "MIT",
   "devDependencies": {
     "broccoli-asset-rev": "^2.2.0",
+    "broccoli-funnel": "^1.0.1",
+    "electron-packager": "7.0.0",
+    "electron-prebuilt": "0.37.6",
+    "electron-rebuild": "1.1.3",
     "ember-cli": "1.13.13",
     "ember-cli-app-version": "^1.0.0",
     "ember-cli-babel": "^5.1.5",
@@ -35,6 +39,59 @@
     "ember-cli-uglify": "^1.2.0",
     "ember-data": "1.13.15",
     "ember-disable-proxy-controllers": "^1.0.1",
-    "ember-export-application-global": "^1.0.4"
+    "ember-electron": "1.4.0",
+    "ember-export-application-global": "^1.0.4",
+    "ember-inspector": "1.9.5"
+  },
+  "dependencies": {
+    "bonjour": "^3.2.2",
+    "drivelist": "^2.0.12",
+    "electron-sudo": "^3.0.3",
+    "path": "^0.12.7",
+    "request": "^2.70.0",
+    "request-progress": "^2.0.1"
+  },
+  "main": "electron.js",
+  "ember-electron": {
+    "WHAT IS THIS?": "Please see the README.md",
+    "copy-files": [
+      "electron.js",
+      "package.json",
+      "scripts/*"
+    ],
+    "name": "arkOS Assistant",
+    "platform": "all",
+    "arch": "all",
+    "version": "0.37.6",
+    "app-bundle-id": "io.citizenweb.arkOS-Assistant",
+    "app-category-type": "public.app-category.utilities",
+    "app-copyright": "(c) 2016 CitizenWeb",
+    "app-version": "1.0.0",
+    "asar": null,
+    "asar-unpack": null,
+    "asar-unpack-dir": null,
+    "build-version": null,
+    "cache": null,
+    "extend-info": null,
+    "extra-resource": null,
+    "helper-bundle-id": null,
+    "icon": "public/img/icon",
+    "ignore": null,
+    "out": null,
+    "osx-sign": {
+      "identity": "Developer ID Application: Jacob Cook (Y5PY2JRJ32)",
+      "entitlements": null,
+      "entitlements-inherit": null
+    },
+    "overwrite": true,
+    "prune": null,
+    "strict-ssl": true,
+    "version-string": {
+      "CompanyName": "CitizenWeb",
+      "FileDescription": "Installer and client utility app for arkOS",
+      "OriginalFilename": "",
+      "ProductName": "arkOS Assistant",
+      "InternalName": "arkos-assistant"
+    }
   }
 }

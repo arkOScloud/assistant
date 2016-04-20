@@ -1,0 +1,14 @@
+<p>arkOS Assistant is ready to install arkOS to the selected devices. Please take a moment to confirm the following information. If you need to correct anything, please Go Back and make necessary changes. The disk writing process cannot be cancelled once it is begun.</p>
+<table class="table">
+  <tbody>
+    <tr><td><strong>Hardware</strong></td><td>{{ selectedHardware.name }}</td></tr>
+    <tr><td><strong>Install Configuration</strong></td><td>{{#if isSplitBoot}}Split Boot/Data{{else}}Default{{/if}}</td></tr>
+    <tr><td><strong>Download Mirror</strong></td><td>{{ selectedMirror.name }}</td></tr>
+    {{#if isSplitBoot}}
+    <tr><td><strong>Install Target (Boot)</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ selectedDevice1.size }}</td></tr>
+    <tr><td><strong>Install Target (Data)</strong></td><td>{{ selectedDevice2.description }} ({{ selectedDevice2.device}}) {{ selectedDevice2.size }}</td></tr>
+    {{else}}
+    <tr><td><strong>Install Target</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ selectedDevice1.size }}</td></tr>
+    {{/if}}
+  </tbody>
+</table>

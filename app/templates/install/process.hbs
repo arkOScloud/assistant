@@ -1,0 +1,44 @@
+<p>arkOS Assistant is installing arkOS to the selected devices. Keep track of the progress below. The disk writing process cannot be cancelled once it is begun.</p>
+<ul>
+  {{#if downloadProgress}}
+  <li><strong>Downloading disk image archive...</strong></li>
+  {{/if}}
+  {{#if isDownloadDone}}
+  <ul><li>Downloaded disk image archive. <i class="fa fa-check"></i></li></ul>
+  <li><strong>Checking archive integrity...</strong></li>
+  {{#if integrityChecked}}
+  <ul><li>Integrity confirmed. <i class="fa fa-check"></i></li></ul>
+  {{/if}}
+  {{/if}}
+  {{#if isExtractionStarted}}
+  <li><strong>Extracting image files...</strong></li>
+  {{/if}}
+  {{#if isExtractionDone}}
+  <ul><li>Image files extracted. <i class="fa fa-check"></i></li></ul>
+  {{/if}}
+  {{#if isDiskWriteStarted}}
+  <li><strong>Writing disk image(s)...</strong></li>
+  {{/if}}
+  {{#if isDiskWriteDone}}
+  <ul><li>Disk image(s) written. <i class="fa fa-check"></i></li></ul>
+  {{/if}}
+</ul>
+
+<div class="aa-progress">
+  {{#unless isDownloadDone}}
+  <div class="progress">
+    <div class="progress-bar" role="progressbar" aria-valuenow="{{ downloadProgressPct }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ downloadProgressPct }}%;">
+      {{ downloadProgressPct }}%
+    </div>
+  </div>
+  <p class="text-center"><em>{{ size-to-string downloadProgress.size.transferred }} of {{ size-to-string downloadProgress.size.total }} downloaded, {{ size-to-string downloadProgress.speed }}/sec</em></p>
+  {{/unless}}
+  {{#if writeProgress}}
+  <div class="progress">
+    <div class="progress-bar {{if isDiskWriteStarted 'progress-bar-striped active'}}" role="progressbar" aria-valuenow="{{ writeProgress.percent }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ writeProgress.percent }}%;">
+      {{#if writeProgress.byteCount}}{{ writeProgress.percent }}%{{/if}}
+    </div>
+  </div>
+  <p class="text-center">{{#if writeProgress.byteCount}}<em>{{ size-to-string writeProgress.byteCount }} of {{ size-to-string writeProgress.totalBytes }} written</em>{{/if}}</p>
+  {{/if}}
+</div>
