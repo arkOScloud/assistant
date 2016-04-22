@@ -55,7 +55,7 @@ export default Ember.Route.extend({
         controller.set('disableBack', true);
         controller.send('updateButtonState', this.routeName);
         ipc.send('writeDisks', image1, selectedDevice1.get('device'),
-          image2, selectedDevice2.get('device'));
+          image2, selectedDevice2 ? selectedDevice2.get('device') : null);
       }
     });
     ipc.on('diskWriteDone', function() {

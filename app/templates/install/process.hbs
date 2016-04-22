@@ -39,6 +39,6 @@
       {{#if writeProgress.byteCount}}{{ writeProgress.percent }}%{{/if}}
     </div>
   </div>
-  <p class="text-center">{{#if writeProgress.byteCount}}<em>{{ size-to-string writeProgress.byteCount }} of {{ size-to-string writeProgress.totalBytes }} written</em>{{/if}}</p>
+  <p class="text-center"><em>{{#if writeProgress.byteCount}}{{ size-to-string writeProgress.byteCount }} of {{ size-to-string writeProgress.totalBytes }} written{{else}}Write in progress.{{/if}}</em></p>
   {{/if}}
 </div>

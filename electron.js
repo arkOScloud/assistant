@@ -12,6 +12,7 @@ const fs               = require('fs');
 const crypto           = require('crypto');
 const bonjour          = require('bonjour');
 const sudo             = require('electron-sudo');
+const path             = require('path');
 const drivelist        = require('drivelist');
 const request          = require('request');
 const child_process    = require('child_process');
@@ -20,6 +21,7 @@ const requestProgress  = require('request-progress');
 let mainWindow = null;
 let isDownloading = false;
 let processAbortFlag = false;
+let zipPath = path.join(app.getPath('downloads'), 'arkos-latest.zip');
 
 electron.crashReporter.start();
 
@@ -98,7 +100,7 @@ ipc.on('startDownload', function(event, downloadUrl) {
   if (isDownloading) {
     return;
   }
-  fs.stat('/tmp/arkos-latest.zip', function(err, stats) {
+  fs.stat(zipPath, function(err, stats) {
     if (stats && stats.isFile()) {
       console.log('Archive found in download directory. Sending for integrity check');
       event.sender.send('updateDownloadProgress', {percentage: 1.0, size: {}});
@@ -140,7 +142,7 @@ var downloadArchive = function(event, downloadUrl) {
     mainWindow.setProgressBar(-1);
     if (processAbortFlag) {
       processAbortFlag = false;
-      fs.unlink('/tmp/arkos-latest.zip');
+      fs.unlink(zipPath);
       console.log('Download cancelled');
     } else {
       console.log('Download complete');
@@ -148,14 +150,14 @@ var downloadArchive = function(event, downloadUrl) {
       event.sender.send('downloadComplete');
     }
   })
-  .pipe(fs.createWriteStream('/tmp/arkos-latest.zip'));
+  .pipe(fs.createWriteStream(zipPath));
 };
 
 ipc.on('startIntegrityCheck', function(event, hashUrl) {
   console.log('Starting integrity check');
   mainWindow.setProgressBar(2);
   var sha256sum = crypto.createHash('sha256');
-  var f         = fs.ReadStream('/tmp/arkos-latest.zip');
+  var f         = fs.ReadStream(zipPath);
   f.on('data', function(data) {
     if (processAbortFlag) {
       f.destroy();
@@ -183,7 +185,7 @@ ipc.on('startIntegrityCheck', function(event, hashUrl) {
         dialog.showErrorBox('Integrity Check Error', 'HTTP ' + resp.statusCode);
         mainWindow.loadURL(emberAppLocation);
       } else if (body.split('  ')[0] !== digest) {
-        fs.unlink('/tmp/arkos-latest.zip');
+        fs.unlink(zipPath);
         console.log('Integrity check FAILED');
         event.sender.send('integrityCheckComplete', 'fail');
         dialog.showErrorBox('Integrity Check Error', 'The integrity check for this file failed. It may have been corrupted during the download, or an updated version may be available from arkOS. It will now be removed. Please try your install again.');
@@ -199,18 +201,30 @@ ipc.on('startIntegrityCheck', function(event, hashUrl) {
 
 ipc.on('startExtraction', function(event) {
   var images = {};
+  var cmd;
+  var sizeIndex;
   console.log('Starting archive extraction');
   event.sender.send('extractionStarted');
 
-  var imgs = child_process.execSync('unzip -l /tmp/arkos-latest.zip', {encoding: 'utf8'});
+  switch (process.platform) {
+    case 'darwin':
+      cmd = `bsdtar tvf ${zipPath}`;
+      sizeIndex = 4;
+      break;
+    default:
+      cmd = `unzip -l ${zipPath}`;
+      sizeIndex = 0;
+      break;
+  }
+  var imgs = child_process.execSync(cmd, {encoding: 'utf8'});
   imgs.split('\n').forEach(function(line) {
     if (line.endsWith('.img')) {
-      line = line.split(' ');
+      line = line.split(/\s+/);
       var name = line[line.length - 1];
       if (name.indexOf('-boot-') >= 0 || name.indexOf('-data-') === -1) {
-        images.boot = {name: name, size: line[0]};
+        images.boot = {name: name, size: line[sizeIndex]};
       } else {
-        images.data = {name: name, size: line[0]};
+        images.data = {name: name, size: line[sizeIndex]};
       }
     }
   });
@@ -235,12 +249,25 @@ ipc.on('startExtraction', function(event) {
 var extractImage = function(img, event, callback) {
   var hadError = '';
   var progress = {byteCount: 0, totalBytes: img.size, percent: 0};
-  var writeStream = fs.createWriteStream('/tmp/' + img.name);
+  var outPath = path.join(app.getPath('downloads'), img.name);
+  var writeStream = fs.createWriteStream(outPath);
   var reportProgress = setInterval(function() {
     event.sender.send('updateWriteProgress', progress);
     mainWindow.setProgressBar((progress.byteCount / progress.totalBytes));
   }, 1000);
-  var proc = child_process.spawn('unzip', ['-p', '/tmp/arkos-latest.zip', img.name]);
+  var cmd;
+  var flags;
+  switch (process.platform) {
+    case 'darwin':
+      cmd = 'bsdtar';
+      flags = ['xOf', zipPath, img.name];
+      break;
+    default:
+      cmd = 'unzip';
+      flags = ['-p', zipPath, img.name];
+      break;
+  }
+  var proc = child_process.spawn(cmd, flags);
   proc.stdout.pipe(writeStream);
   proc.stdout.on('data', function(data) {
     if (processAbortFlag) {
@@ -275,20 +302,22 @@ var extractImage = function(img, event, callback) {
 ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   var cmd;
   var stderr = '';
+  image1 = path.join(app.getPath('downloads'), image1);
+  image2 = image2 ? path.join(app.getPath('downloads'), image2) : null;
   switch(process.platform) {
     case 'darwin':
       var dev1 = '/dev/rdisk' + device1.slice(-1)[0];
-      var dev2 = '/dev/rdisk' + device2.slice(-1)[0];
-      cmd = `"${__dirname}/scripts/disk-write-osx.sh" ${dev1} /tmp/${image1}`;
+      var dev2 = device2 ? '/dev/rdisk' + device2.slice(-1)[0] : null;
+      cmd = `"${__dirname}/scripts/disk-write-osx.sh" ${dev1} ${image1}`;
       if (dev2 && image2) {
-        cmd += ` ${dev2} /tmp/${image2}`;
+        cmd += ` ${dev2} ${image2}`;
       }
       break;
     default:
       // linux
-      cmd = `"${__dirname}/scripts/disk-write-linux.sh" ${device1} /tmp/${image1}`;
+      cmd = `"${__dirname}/scripts/disk-write-linux.sh" ${device1} ${image1}`;
       if (device2 && image2) {
-        cmd += ` ${device2} /tmp/${image2}`;
+        cmd += ` ${device2} ${image2}`;
       }
       break;
   }
@@ -303,9 +332,9 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
           }
         });
         ps.on('close', function(code) {
-          mainWindow.setProgressBar(-1);
-          event.sender.send('updateWriteProgress', null);
           if (code === 0) {
+            mainWindow.setProgressBar(-1);
+            event.sender.send('updateWriteProgress', null);
             console.log('Disk write complete');
             event.sender.send('diskWriteDone', 'pass');
           }
@@ -319,9 +348,9 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   mainWindow.setProgressBar(2);
   event.sender.send('updateWriteProgress', {percent: 100});
   sudo.exec(cmd, options, function(err) {
+    mainWindow.setProgressBar(-1);
+    event.sender.send('updateWriteProgress', null);
     if (stderr !== 'sudo: a password is required\n') {
-      mainWindow.setProgressBar(-1);
-      event.sender.send('updateWriteProgress', null);
       console.log('Disk write failed: ' + err ? err : stderr);
       dialog.showErrorBox('Disk Write Error', err ? err : stderr);
       mainWindow.loadURL(emberAppLocation);
@@ -331,23 +360,23 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
 
 ipc.on('removeDownloadedFiles', function() {
   var images = [];
-
-  fs.stat('/tmp/arkos-latest.zip', function(err, stats) {
+  fs.stat(zipPath, function(err, stats) {
     if (stats && stats.isFile()) {
-      var imgs = child_process.execSync('unzip -l /tmp/arkos-latest.zip', {encoding: 'utf8'});
+      var imgs = child_process.execSync(`unzip -l ${zipPath}`, {encoding: 'utf8'});
       imgs.split('\n').forEach(function(line) {
         if (line.endsWith('.img')) {
           images.push(line[line.length - 1]);
         }
       });
-      fs.unlink('/tmp/arkos-latest.zip');
+      fs.unlink(zipPath);
     }
   });
 
   images.forEach(function(image) {
-    fs.stat('/tmp/' + image, function(err, stats) {
+    var imgPath = path.join(app.getPath('downloads'), image);
+    fs.stat(imgPath, function(err, stats) {
       if (stats && stats.isFile()) {
-        fs.unlink('/tmp/' + image);
+        fs.unlink(imgPath);
       }
     });
   });
