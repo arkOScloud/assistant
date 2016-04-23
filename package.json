@@ -45,11 +45,14 @@
   },
   "dependencies": {
     "bonjour": "^3.2.2",
-    "drivelist": "^2.0.12",
+    "drivelist": "^3.0.0",
     "electron-sudo": "^3.0.3",
     "path": "^0.12.7",
     "request": "^2.70.0",
-    "request-progress": "^2.0.1"
+    "request-progress": "^2.0.1",
+    "resin-image-write": "^3.0.4",
+    "unzip2": "^0.2.5",
+    "yauzl": "^2.4.1"
   },
   "main": "electron.js",
   "ember-electron": {
@@ -57,7 +60,7 @@
     "copy-files": [
       "electron.js",
       "package.json",
-      "scripts/*"
+      "includes/*"
     ],
     "name": "arkOS Assistant",
     "platform": "all",

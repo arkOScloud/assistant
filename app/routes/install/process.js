@@ -51,16 +51,16 @@ export default Ember.Route.extend({
     ipc.on('extractionComplete', function(event, data, image1, image2) {
       if (data === 'pass') {
         controller.set('isExtractionDone', true);
-        controller.set('isDiskWriteStarted', true);
-        controller.set('disableBack', true);
         controller.send('updateButtonState', this.routeName);
-        ipc.send('writeDisks', image1, selectedDevice1.get('device'),
-          image2, selectedDevice2 ? selectedDevice2.get('device') : null);
+        controller.set('isDiskWriteStarted', true);
+        ipc.send('writeDisks', image1, JSON.parse(JSON.stringify(selectedDevice1)),
+          image2, selectedDevice2 ? JSON.parse(JSON.stringify(selectedDevice2)) : null);
       }
     });
     ipc.on('diskWriteDone', function() {
       controller.set('isDiskWriteDone', true);
       controller.set('disableNext', false);
+      controller.set('disableBack', true);
       controller.send('updateButtonState', self.routeName);
       self.send('wizardNext');
     });

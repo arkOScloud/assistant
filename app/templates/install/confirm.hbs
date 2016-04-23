@@ -5,10 +5,10 @@
     <tr><td><strong>Install Configuration</strong></td><td>{{#if isSplitBoot}}Split Boot/Data{{else}}Default{{/if}}</td></tr>
     <tr><td><strong>Download Mirror</strong></td><td>{{ selectedMirror.name }}</td></tr>
     {{#if isSplitBoot}}
-    <tr><td><strong>Install Target (Boot)</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ selectedDevice1.size }}</td></tr>
-    <tr><td><strong>Install Target (Data)</strong></td><td>{{ selectedDevice2.description }} ({{ selectedDevice2.device}}) {{ selectedDevice2.size }}</td></tr>
+    <tr><td><strong>Install Target (Boot)</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ size-to-string selectedDevice1.size }}</td></tr>
+    <tr><td><strong>Install Target (Data)</strong></td><td>{{ selectedDevice2.description }} ({{ selectedDevice2.device}}) {{ size-to-string selectedDevice2.size }}</td></tr>
     {{else}}
-    <tr><td><strong>Install Target</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ selectedDevice1.size }}</td></tr>
+    <tr><td><strong>Install Target</strong></td><td>{{ selectedDevice1.description }} ({{ selectedDevice1.device}}) {{ size-to-string selectedDevice1.size }}</td></tr>
     {{/if}}
   </tbody>
 </table>

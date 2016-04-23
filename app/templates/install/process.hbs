@@ -1,4 +1,4 @@
-<p>arkOS Assistant is installing arkOS to the selected devices. Keep track of the progress below. The disk writing process cannot be cancelled once it is begun.</p>
+<p>arkOS Assistant is installing arkOS to the selected devices. Keep track of the progress below.</p>
 <ul>
   {{#if downloadProgress}}
   <li><strong>Downloading disk image archive...</strong></li>
@@ -35,10 +35,10 @@
   {{/unless}}
   {{#if writeProgress}}
   <div class="progress">
-    <div class="progress-bar {{if isDiskWriteStarted 'progress-bar-striped active'}}" role="progressbar" aria-valuenow="{{ writeProgress.percent }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ writeProgress.percent }}%;">
+    <div class="progress-bar {{if writeProgress.byteCount '' 'progress-bar-striped active'}}" role="progressbar" aria-valuenow="{{ writeProgress.percent }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ writeProgress.percent }}%;">
       {{#if writeProgress.byteCount}}{{ writeProgress.percent }}%{{/if}}
     </div>
   </div>
-  <p class="text-center"><em>{{#if writeProgress.byteCount}}{{ size-to-string writeProgress.byteCount }} of {{ size-to-string writeProgress.totalBytes }} written{{else}}Write in progress.{{/if}}</em></p>
+  <p class="text-center"><em>{{#if writeProgress.byteCount}}{{ size-to-string writeProgress.byteCount }} of {{ size-to-string writeProgress.totalBytes }} written{{else}}Verifying...{{/if}}</em></p>
   {{/if}}
 </div>

@@ -13,9 +13,11 @@ const crypto           = require('crypto');
 const bonjour          = require('bonjour');
 const sudo             = require('electron-sudo');
 const path             = require('path');
+const yauzl            = require('yauzl');
+const Transform        = require("stream").Transform;
 const drivelist        = require('drivelist');
 const request          = require('request');
-const child_process    = require('child_process');
+const readline         = require('readline');
 const requestProgress  = require('request-progress');
 
 let mainWindow = null;
@@ -156,6 +158,7 @@ var downloadArchive = function(event, downloadUrl) {
 ipc.on('startIntegrityCheck', function(event, hashUrl) {
   console.log('Starting integrity check');
   mainWindow.setProgressBar(2);
+  event.sender.send('updateWriteProgress', {percent: 100});
   var sha256sum = crypto.createHash('sha256');
   var f         = fs.ReadStream(zipPath);
   f.on('data', function(data) {
@@ -201,131 +204,152 @@ ipc.on('startIntegrityCheck', function(event, hashUrl) {
 
 ipc.on('startExtraction', function(event) {
   var images = {};
-  var cmd;
-  var sizeIndex;
   console.log('Starting archive extraction');
   event.sender.send('extractionStarted');
 
-  switch (process.platform) {
-    case 'darwin':
-      cmd = `bsdtar tvf ${zipPath}`;
-      sizeIndex = 4;
-      break;
-    default:
-      cmd = `unzip -l ${zipPath}`;
-      sizeIndex = 0;
-      break;
-  }
-  var imgs = child_process.execSync(cmd, {encoding: 'utf8'});
-  imgs.split('\n').forEach(function(line) {
-    if (line.endsWith('.img')) {
-      line = line.split(/\s+/);
-      var name = line[line.length - 1];
-      if (name.indexOf('-boot-') >= 0 || name.indexOf('-data-') === -1) {
-        images.boot = {name: name, size: line[sizeIndex]};
-      } else {
-        images.data = {name: name, size: line[sizeIndex]};
-      }
+  yauzl.open(zipPath, {lazyEntries: true}, function(err, zipfile) {
+    if (err) {
+      throw err;
     }
-  });
-
-  extractImage(images.boot, event, function() {
-    if (processAbortFlag) {
-      return;
-    } else if (images.data) {
-      extractImage(images.data, event, function() {
-        console.log('Archive extraction complete');
-        event.sender.send('extractionComplete', 'pass', images.boot.name, images.data.name);
+    zipfile.readEntry();
+    zipfile.on("close", function() {
+      extractImage(images.boot, event, function() {
+        if (processAbortFlag) {
+          return;
+        } else if (images.data) {
+          extractImage(images.data, event, function() {
+            console.log('Archive extraction complete');
+            event.sender.send('extractionComplete', 'pass', images.boot.name, images.data.name);
+          });
+        } else {
+          console.log('Archive extraction complete');
+          event.sender.send('extractionComplete', 'pass', images.boot.name, null);
+        }
       });
-    } else {
-      console.log('Archive extraction complete');
-      event.sender.send('extractionComplete', 'pass', images.boot.name, null);
-    }
+    });
+    zipfile.on("entry", function(entry) {
+      if (entry.fileName.indexOf('-boot-') >= 0 || entry.fileName.indexOf('-data-') === -1) {
+        images.boot = {name: entry.fileName, size: entry.uncompressedSize};
+      } else {
+        images.data = {name: entry.fileName, size: entry.uncompressedSize};
+      }
+      zipfile.readEntry();
+    });
+    zipfile.on("error", function(err) {
+      console.log(err);
+      console.log('Archive check failed');
+      processAbortFlag = true;
+      dialog.showErrorBox('Archive check failed', err);
+      mainWindow.loadURL(emberAppLocation);
+    });
   });
 
   processAbortFlag = false;
 });
 
 var extractImage = function(img, event, callback) {
-  var hadError = '';
   var progress = {byteCount: 0, totalBytes: img.size, percent: 0};
   var outPath = path.join(app.getPath('downloads'), img.name);
-  var writeStream = fs.createWriteStream(outPath);
-  var reportProgress = setInterval(function() {
-    event.sender.send('updateWriteProgress', progress);
-    mainWindow.setProgressBar((progress.byteCount / progress.totalBytes));
-  }, 1000);
-  var cmd;
-  var flags;
-  switch (process.platform) {
-    case 'darwin':
-      cmd = 'bsdtar';
-      flags = ['xOf', zipPath, img.name];
-      break;
-    default:
-      cmd = 'unzip';
-      flags = ['-p', zipPath, img.name];
-      break;
-  }
-  var proc = child_process.spawn(cmd, flags);
-  proc.stdout.pipe(writeStream);
-  proc.stdout.on('data', function(data) {
-    if (processAbortFlag) {
-      proc.stdout.unpipe();
-      proc.kill();
-    } else {
-      progress.byteCount += data.length;
-      progress.percent = ((progress.byteCount / progress.totalBytes * 100) | 0);
+  console.log('Extracting image: ' + JSON.stringify(img));
+
+  yauzl.open(zipPath, {lazyEntries: true}, function(err, zipfile) {
+    if (err) {
+      throw err;
     }
-  });
-  proc.stderr.on('data', function(err) {
-    hadError += err;
-  });
-  proc.on('close', function(code) {
-    clearInterval(reportProgress);
-    mainWindow.setProgressBar(-1);
-    event.sender.send('updateWriteProgress', null);
-    if ([0, 1, 80].indexOf(code) === -1) {
-      console.log(hadError || code);
+    zipfile.readEntry();
+    zipfile.on("close", function() {
+      mainWindow.setProgressBar(-1);
+      event.sender.send('updateWriteProgress', null);
+      if (processAbortFlag) {
+        console.log('Archive extraction aborted');
+        processAbortFlag = false;
+      } else {
+        callback();
+      }
+    });
+    zipfile.on("entry", function(entry) {
+      if (entry.fileName !== img.name) {
+        zipfile.readEntry();
+      } else {
+        zipfile.openReadStream(entry, function(err, readStream) {
+          if (err) {
+            throw err;
+          }
+          event.sender.send('updateWriteProgress', progress);
+          var reportProgress = setInterval(function() {
+            event.sender.send('updateWriteProgress', progress);
+            mainWindow.setProgressBar((progress.byteCount / progress.totalBytes));
+          }, 1000);
+          var filter = new Transform();
+          filter._transform = function(chunk, encoding, cb) {
+            if (processAbortFlag) {
+              clearInterval(reportProgress);
+              readStream.unpipe();
+              readStream.destroy();
+              zipfile.close();
+            }
+            progress.byteCount += chunk.length;
+            progress.percent = Math.round(progress.byteCount / progress.totalBytes * 10000) / 100;
+            cb(null, chunk);
+          };
+          filter._flush = function(cb) {
+            clearInterval(reportProgress);
+            cb();
+            zipfile.readEntry();
+          };
+          var writeStream = fs.createWriteStream(outPath);
+          var filterPipe = readStream.pipe(filter);
+          filterPipe.pipe(writeStream);
+        });
+      }
+    });
+    zipfile.on("error", function(err) {
+      event.sender.send('updateWriteProgress', null);
+      mainWindow.setProgressBar(-1);
+      console.log(err);
       console.log('Archive extraction failed');
       processAbortFlag = true;
-      dialog.showErrorBox('Archive extraction failed', hadError || code.toString());
+      dialog.showErrorBox('Archive extraction failed', err);
       mainWindow.loadURL(emberAppLocation);
-    } else if (processAbortFlag) {
-      console.log('Archive extraction aborted');
-    } else {
-      callback();
-    }
+    });
   });
 };
 
 ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
-  var cmd;
   var stderr = '';
   image1 = path.join(app.getPath('downloads'), image1);
   image2 = image2 ? path.join(app.getPath('downloads'), image2) : null;
-  switch(process.platform) {
-    case 'darwin':
-      var dev1 = '/dev/rdisk' + device1.slice(-1)[0];
-      var dev2 = device2 ? '/dev/rdisk' + device2.slice(-1)[0] : null;
-      cmd = `"${__dirname}/scripts/disk-write-osx.sh" ${dev1} ${image1}`;
-      if (dev2 && image2) {
-        cmd += ` ${dev2} ${image2}`;
-      }
-      break;
-    default:
-      // linux
-      cmd = `"${__dirname}/scripts/disk-write-linux.sh" ${device1} ${image1}`;
-      if (device2 && image2) {
-        cmd += ` ${device2} ${image2}`;
-      }
-      break;
+  if (process.platform === 'darwin') {
+    device1.device = '/dev/rdisk' + device1.device.slice(-1)[0];
+    if (device2) {
+      device2.device = '/dev/rdisk' + device2.device.slice(-1)[0];
+    }
   }
+  var cmd = `node "${__dirname}/includes/disk-write.js" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+  if (device2 && image2) {
+    cmd += ` ${device2.device} ${image2} ${device2.mountpoint}`;
+  }
+  console.log('Command will be: ' + cmd);
   var options = {
     name: 'arkOS Assistant',
     icns: `${__dirname}/dist/img/icon.icns`,
     process: {
       on: function(ps) {
+        readline.createInterface({
+          input     : ps.stdout,
+          terminal  : false
+        }).on('line', function(line) {
+          if (processAbortFlag) {
+            ps.stdout.unpipe();
+            ps.kill();
+          } else {
+            var progress = JSON.parse(line);
+            if (progress) {
+              mainWindow.setProgressBar(progress.percent / 100);
+            }
+            event.sender.send('updateWriteProgress', progress);
+          }
+        });
         ps.stderr.on('data', function(data) {
           if (data) {
             stderr += data;
@@ -337,6 +361,9 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
             event.sender.send('updateWriteProgress', null);
             console.log('Disk write complete');
             event.sender.send('diskWriteDone', 'pass');
+          } else if (processAbortFlag) {
+            console.log('Disk write aborted');
+            processAbortFlag = false;
           }
         });
       }
@@ -350,7 +377,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   sudo.exec(cmd, options, function(err) {
     mainWindow.setProgressBar(-1);
     event.sender.send('updateWriteProgress', null);
-    if (stderr !== 'sudo: a password is required\n') {
+    if (stderr && stderr !== 'sudo: a password is required\n' && stderr !== 'null') {
       console.log('Disk write failed: ' + err ? err : stderr);
       dialog.showErrorBox('Disk Write Error', err ? err : stderr);
       mainWindow.loadURL(emberAppLocation);
@@ -359,25 +386,23 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
 });
 
 ipc.on('removeDownloadedFiles', function() {
-  var images = [];
   fs.stat(zipPath, function(err, stats) {
     if (stats && stats.isFile()) {
-      var imgs = child_process.execSync(`unzip -l ${zipPath}`, {encoding: 'utf8'});
-      imgs.split('\n').forEach(function(line) {
-        if (line.endsWith('.img')) {
-          images.push(line[line.length - 1]);
-        }
+      yauzl.open(zipPath, {lazyEntries: true}, function(err, zipfile) {
+        zipfile.readEntry();
+        zipfile.on("close", function() {
+          fs.unlink(zipPath);
+        });
+        zipfile.on("entry", function(entry) {
+          var imgPath = path.join(app.getPath('downloads'), entry.fileName);
+          fs.stat(imgPath, function(err, stats) {
+            if (stats && stats.isFile()) {
+              fs.unlink(imgPath);
+            }
+          });
+          zipfile.readEntry();
+        });
       });
-      fs.unlink(zipPath);
     }
-  });
-
-  images.forEach(function(image) {
-    var imgPath = path.join(app.getPath('downloads'), image);
-    fs.stat(imgPath, function(err, stats) {
-      if (stats && stats.isFile()) {
-        fs.unlink(imgPath);
-      }
-    });
   });
 });
