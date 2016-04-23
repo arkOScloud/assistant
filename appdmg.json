@@ -1,0 +1,10 @@
+{
+  "title": "arkOS Assistant",
+  "icon": "build-includes/icon.icns",
+  "background": "build-includes/appdmg-bkg.png",
+  "icon-size": 80,
+  "contents": [
+    { "x": 448, "y": 344, "type": "link", "path": "/Applications" },
+    { "x": 192, "y": 344, "type": "file", "path": "electron-builds/arkOS Assistant-darwin-x64/arkOS Assistant.app" }
+  ]
+}

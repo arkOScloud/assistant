@@ -32,22 +32,18 @@ module.exports = function(defaults) {
       srcDir: '/',
       destDir: 'fonts'
   });
-  var latoBold = new Funnel('bower_components/lato/font/lato-bold', {
+  var latoLight = new Funnel('bower_components/lato/font/lato-light', {
       srcDir: '/',
-      destDir: 'font/lato-bold'
+      destDir: 'font/lato-light'
   });
-  var latoHairline = new Funnel('bower_components/lato/font/lato-hairline', {
+  var latoItalic = new Funnel('bower_components/lato/font/lato-hairline', {
       srcDir: '/',
-      destDir: 'font/lato-hairline'
-  });
-  var latoThin = new Funnel('bower_components/lato/font/lato-thin', {
-      srcDir: '/',
-      destDir: 'font/lato-thin'
+      destDir: 'font/lato-italic'
   });
   var latoRegular = new Funnel('bower_components/lato/font/lato-regular', {
       srcDir: '/',
       destDir: 'font/lato-regular'
   });
 
-  return app.toTree([fontAwesome, latoBold, latoHairline, latoThin, latoRegular]);
+  return app.toTree([fontAwesome, latoLight, latoItalic, latoRegular]);
 };

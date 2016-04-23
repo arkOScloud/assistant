@@ -35,7 +35,7 @@ app.on('ready', function onReady() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    icon: __dirname + 'dist/img/icon.png'
+    icon: __dirname + 'dist/includes/icon.png'
   });
 
   if (process.platform === "linux" && process.env.PATH.indexOf(":/sbin") === -1) {
@@ -342,7 +342,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   console.log('Command will be: ' + cmd);
   var options = {
     name: 'arkOS Assistant',
-    icns: `${__dirname}/dist/img/icon.icns`,
+    icns: `${__dirname}/includes/icon.icns`,
     process: {
       on: function(ps) {
         readline.createInterface({
@@ -398,6 +398,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
 });
 
 var onWriteError = function(err) {
+  err = typeof err === "string" ? err : err.toString();
   if (err && err !== 'sudo: a password is required\n' && err !== 'null') {
     console.log('Disk write failed: ' + err);
     dialog.showErrorBox('Disk Write Error', err);
