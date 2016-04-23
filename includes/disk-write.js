@@ -14,6 +14,7 @@ const platform  = process.argv[2],
       driveLtr1 = process.argv[5],
       driveLtr2 = process.argv[8];
 
+const newline = process.platform === "win32" ? '\r\n' : '\n';
 
 var dev1Obj = {path: device1, image: image1, letter: driveLtr1};
 var dev2Obj = device2 ? {path: device2, image: image2, letter: driveLtr2} : null;
@@ -52,18 +53,19 @@ var writeImage = function(device, nextDevice) {
       progress.byteCount = state.transferred;
       progress.totalBytes = state.length;
     }
-    process.stdout.write(JSON.stringify(progress) + '\n');
+    process.stdout.write(JSON.stringify(progress) + newline);
   });
   writer.on('error', function(error) {
-    process.stderr.write(`An error occured while writing the image: ${error}\n`);
+    process.stderr.write(`An error occured while writing the image: ${error}` + newline);
     process.exit(1);
   });
   writer.on('done', function(success) {
-    process.stdout.write('null\n');
+    process.stdout.write('null' + newline);
     if (success && nextDevice) {
       writeImage(nextDevice);
     } else if (!success) {
       process.stderr.write('The image could not be written. Please verify the integrity of the device and try again.');
+      process.exit(1);
     } else {
       process.exit(0);
     }

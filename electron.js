@@ -161,14 +161,20 @@ var downloadArchive = function(event, downloadUrl) {
 
 ipc.on('startIntegrityCheck', function(event, hashUrl) {
   console.log('Starting integrity check');
-  mainWindow.setProgressBar(2);
-  event.sender.send('updateWriteProgress', {percent: 100});
+  mainWindow.setProgressBar(0);
+  event.sender.send('updateWriteProgress', {percent: 0});
+  var checkProgress = {byteCount: 0, totalBytes: fs.statSync(zipPath).size};
   var sha256sum = crypto.createHash('sha256');
   var f         = fs.ReadStream(zipPath);
+  var pct;
   f.on('data', function(data) {
     if (processAbortFlag) {
       f.destroy();
     }
+    checkProgress.byteCount += data.length;
+    pct = Math.round(checkProgress.byteCount / checkProgress.totalBytes);
+    mainWindow.setProgressBar(pct);
+    event.sender.send('updateWriteProgress', {percent: pct * 100});
     sha256sum.update(data);
   });
   f.on('close', function() {
@@ -347,11 +353,13 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
             ps.stdout.unpipe();
             ps.kill();
           } else {
-            var progress = JSON.parse(line);
-            if (progress) {
-              mainWindow.setProgressBar(progress.percent / 100);
+            if (line.startsWith('{') && line.endsWith('}')) {
+              var progress = JSON.parse(line);
+              if (progress) {
+                mainWindow.setProgressBar(progress.percent / 100);
+              }
+              event.sender.send('updateWriteProgress', progress);
             }
-            event.sender.send('updateWriteProgress', progress);
           }
         });
         ps.stderr.on('data', function(data) {
@@ -368,6 +376,9 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
           } else if (processAbortFlag) {
             console.log('Disk write aborted');
             processAbortFlag = false;
+          } else {
+            console.log('Disk write failed: ' + stderr);
+            dialog.showErrorBox('Disk Write Error', stderr);
           }
         });
       }
