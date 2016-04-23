@@ -51,7 +51,6 @@
     "request": "^2.70.0",
     "request-progress": "^2.0.1",
     "resin-image-write": "^3.0.4",
-    "unzip2": "^0.2.5",
     "yauzl": "^2.4.1"
   },
   "main": "electron.js",

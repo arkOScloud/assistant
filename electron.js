@@ -35,8 +35,12 @@ app.on('ready', function onReady() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    icon: __dirname + 'public/img/icon.png'
+    icon: __dirname + 'dist/img/icon.png'
   });
+
+  if (process.platform === "linux" && process.env.PATH.indexOf(":/sbin") === -1) {
+    process.env.PATH = process.env.PATH += ":/sbin";
+  }
 
   delete mainWindow.module;
 
@@ -379,7 +383,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
     event.sender.send('updateWriteProgress', null);
     if (stderr && stderr !== 'sudo: a password is required\n' && stderr !== 'null') {
       console.log('Disk write failed: ' + err ? err : stderr);
-      dialog.showErrorBox('Disk Write Error', err ? err : stderr);
+      dialog.showErrorBox('Disk Write Error', err ? err.toString() : stderr);
       mainWindow.loadURL(emberAppLocation);
     }
   });

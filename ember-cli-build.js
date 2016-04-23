@@ -22,7 +22,7 @@ module.exports = function(defaults) {
   // along with the exports of each module as its value.
 
   app.import("bower_components/font-awesome/css/font-awesome.css");
-  app.import("bower_components/fira/fira.css");
+  app.import("bower_components/lato/css/lato.css");
   app.import('bower_components/bootstrap/dist/js/bootstrap.js');
   app.import('bower_components/bootstrap/dist/css/bootstrap.css');
   app.import('bower_components/bootstrap/dist/css/bootstrap.css.map', {
@@ -32,22 +32,22 @@ module.exports = function(defaults) {
       srcDir: '/',
       destDir: 'fonts'
   });
-  var firaEot = new Funnel('bower_components/fira/eot', {
+  var latoBold = new Funnel('bower_components/lato/font/lato-bold', {
       srcDir: '/',
-      destDir: 'assets/eot'
+      destDir: 'font/lato-bold'
   });
-  var firaOtf = new Funnel('bower_components/fira/otf', {
+  var latoHairline = new Funnel('bower_components/lato/font/lato-hairline', {
       srcDir: '/',
-      destDir: 'assets/otf'
+      destDir: 'font/lato-hairline'
   });
-  var firaTtf = new Funnel('bower_components/fira/ttf', {
+  var latoThin = new Funnel('bower_components/lato/font/lato-thin', {
       srcDir: '/',
-      destDir: 'assets/ttf'
+      destDir: 'font/lato-thin'
   });
-  var firaWoff = new Funnel('bower_components/fira/woff', {
+  var latoRegular = new Funnel('bower_components/lato/font/lato-regular', {
       srcDir: '/',
-      destDir: 'assets/woff'
+      destDir: 'font/lato-regular'
   });
 
-  return app.toTree([fontAwesome, firaEot, firaOtf, firaTtf, firaWoff]);
+  return app.toTree([fontAwesome, latoBold, latoHairline, latoThin, latoRegular]);
 };

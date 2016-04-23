@@ -1,6 +1,7 @@
 /* jshint node: true */
 
 const fs            = require('fs');
+const readline      = require('readline');
 const child_process = require('child_process');
 const imageWrite    = require('resin-image-write');
 
@@ -13,15 +14,9 @@ const platform  = process.argv[2],
       driveLtr1 = process.argv[5],
       driveLtr2 = process.argv[8];
 
-var stream1 = fs.createReadStream(image1);
-stream1.length = fs.statSync(image1).size;
-if (image2) {
-  var stream2 = fs.createReadStream(image2);
-  stream2.length = fs.statSync(image2).size;
-}
 
-var dev1Obj = {path: device1, stream: stream1, letter: driveLtr1};
-var dev2Obj = device2 ? {path: device2, stream: stream2, letter: driveLtr2} : null;
+var dev1Obj = {path: device1, image: image1, letter: driveLtr1};
+var dev2Obj = device2 ? {path: device2, image: image2, letter: driveLtr2} : null;
 
 var unmountDisk = function(device) {
   switch (platform) {
@@ -33,14 +28,24 @@ var unmountDisk = function(device) {
       break;
     default:
       // linux
-      child_process.execSync(`ls ${device.path}?* | xargs -n1 umount -l`);
+      var lineReader = readline.createInterface({
+        input: fs.createReadStream('/etc/mtab')
+      });
+      lineReader.on('line', function (line) {
+        var dpart = line.split(" +");
+        if (dpart[1] && dpart[1].startsWith(device.path)) {
+          child_process.execSync(`umount -l ${dpart[1]}`);
+        }
+      });
       break;
   }
 };
 
 var writeImage = function(device, nextDevice) {
   unmountDisk(device);
-  var writer = imageWrite.write(device.path, device.stream, {check: true});
+  var stream = fs.createReadStream(device.image);
+  stream.length = fs.statSync(device.image).size;
+  var writer = imageWrite.write(device.path, stream, {check: true});
   writer.on('progress', function(state) {
     var progress = {percent: (Math.round(state.percentage * 100) / 100)};
     if (state.type !== 'check') {
