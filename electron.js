@@ -377,8 +377,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
             console.log('Disk write aborted');
             processAbortFlag = false;
           } else {
-            console.log('Disk write failed: ' + stderr);
-            dialog.showErrorBox('Disk Write Error', stderr);
+            onWriteError(stderr);
           }
         });
       }
@@ -392,13 +391,19 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   sudo.exec(cmd, options, function(err) {
     mainWindow.setProgressBar(-1);
     event.sender.send('updateWriteProgress', null);
-    if (stderr && stderr !== 'sudo: a password is required\n' && stderr !== 'null') {
-      console.log('Disk write failed: ' + err ? err : stderr);
-      dialog.showErrorBox('Disk Write Error', err ? err.toString() : stderr);
-      mainWindow.loadURL(emberAppLocation);
+    if (err) {
+      onWriteError(err);
     }
   });
 });
+
+var onWriteError = function(err) {
+  if (err && err !== 'sudo: a password is required\n' && err !== 'null') {
+    console.log('Disk write failed: ' + err);
+    dialog.showErrorBox('Disk Write Error', err);
+    mainWindow.loadURL(emberAppLocation);
+  }
+};
 
 ipc.on('removeDownloadedFiles', function() {
   fs.stat(zipPath, function(err, stats) {
