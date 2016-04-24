@@ -44,6 +44,10 @@ module.exports = function(defaults) {
       srcDir: '/',
       destDir: 'font/lato-regular'
   });
+  var latoBold = new Funnel('bower_components/lato/font/lato-bold', {
+      srcDir: '/',
+      destDir: 'font/lato-bold'
+  });
 
-  return app.toTree([fontAwesome, latoLight, latoItalic, latoRegular]);
+  return app.toTree([fontAwesome, latoLight, latoItalic, latoRegular, latoBold]);
 };
