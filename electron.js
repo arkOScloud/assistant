@@ -23,7 +23,7 @@ const requestProgress  = require('request-progress');
 let mainWindow = null;
 let isDownloading = false;
 let processAbortFlag = false;
-let zipPath = path.join(app.getPath('downloads'), 'arkos-latest.zip');
+let zipPath;
 
 electron.crashReporter.start();
 
@@ -106,6 +106,7 @@ ipc.on('startDownload', function(event, downloadUrl) {
   if (isDownloading) {
     return;
   }
+  zipPath = path.join(app.getPath('downloads'), 'arkos-' + path.basename(downloadUrl));
   fs.stat(zipPath, function(err, stats) {
     if (stats && stats.isFile()) {
       console.log('Archive found in download directory. Sending for integrity check');
@@ -327,23 +328,37 @@ var extractImage = function(img, event, callback) {
 
 ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   var stderr = '';
+  var nodePath = process.execPath;
   image1 = path.join(app.getPath('downloads'), image1);
   image2 = image2 ? path.join(app.getPath('downloads'), image2) : null;
   if (process.platform === 'darwin') {
+    var appName = app.getName();
     device1.device = '/dev/rdisk' + device1.device.slice(-1)[0];
     if (device2) {
       device2.device = '/dev/rdisk' + device2.device.slice(-1)[0];
     }
+    if (nodePath.indexOf("/Electron.app/") >= 0) {
+      appName = 'Electron';
+    }
+    nodePath = path.resolve(process.resourcesPath, '..', 'Frameworks',
+      appName + ' Helper.app', 'Contents', 'MacOS', appName + ' Helper');
   }
-  var cmd = `node "${__dirname}/includes/disk-write.js" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+  var cmd = `"\\\"${nodePath}\\\" \\\"${__dirname}/includes/disk-write.js\\\" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
   if (device2 && image2) {
-    cmd += ` ${device2.device} ${image2} ${device2.mountpoint}`;
+    cmd += ` ${device2.device} \\\"${image2}\\\" ${device2.mountpoint}`;
   }
+  cmd += '"';
   console.log('Command will be: ' + cmd);
   var options = {
     name: 'arkOS Assistant',
     icns: `${__dirname}/includes/icon.icns`,
     process: {
+      options: {
+        env: {
+          'ELECTRON_RUN_AS_NODE': 1,
+          'ELECTRON_NO_ATTACH_CONSOLE': 1
+        }
+      },
       on: function(ps) {
         readline.createInterface({
           input     : ps.stdout,

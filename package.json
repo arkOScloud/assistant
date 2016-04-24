@@ -1,5 +1,6 @@
 {
   "name": "arkos-assistant",
+  "productName": "arkOS Assistant",
   "version": "1.0.0",
   "description": "Installer and client utility app for arkOS",
   "private": true,
@@ -10,7 +11,14 @@
   "scripts": {
     "build": "ember build",
     "start": "ember server",
-    "test": "ember test"
+    "test": "ember test",
+    "package:mac": "ember electron:package --platform darwin --arch x64",
+    "package:win": "ember electron:package --platform win32 --arch x64",
+    "package:linux": "ember electron:package --platform linux --arch x64",
+    "bundle:mac": "appdmg appdmg.json electron-builds/\"arkOS Assistant.dmg\"",
+    "bundle:win": "node winstaller.js",
+    "bundle:linux": "",
+    "bundle:deb": ""
   },
   "repository": "",
   "engines": {
