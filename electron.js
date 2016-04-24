@@ -328,6 +328,7 @@ var extractImage = function(img, event, callback) {
 
 ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   var stderr = '';
+  var cmd = '';
   var nodePath = process.execPath;
   image1 = path.join(app.getPath('downloads'), image1);
   image2 = image2 ? path.join(app.getPath('downloads'), image2) : null;
@@ -342,12 +343,17 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
     }
     nodePath = path.resolve(process.resourcesPath, '..', 'Frameworks',
       appName + ' Helper.app', 'Contents', 'MacOS', appName + ' Helper');
+    cmd = `"\\\"${nodePath}\\\" \\\"${__dirname}/includes/disk-write.js\\\" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+    if (device2 && image2) {
+      cmd += ` ${device2.device} \\\"${image2}\\\" ${device2.mountpoint}`;
+    }
+    cmd += '"';
+  } else {
+    cmd = `"${nodePath}" "${__dirname}/includes/disk-write.js" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+    if (device2 && image2) {
+      cmd += ` ${device2.device} "${image2}" ${device2.mountpoint}`;
+    }
   }
-  var cmd = `"\\\"${nodePath}\\\" \\\"${__dirname}/includes/disk-write.js\\\" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
-  if (device2 && image2) {
-    cmd += ` ${device2.device} \\\"${image2}\\\" ${device2.mountpoint}`;
-  }
-  cmd += '"';
   console.log('Command will be: ' + cmd);
   var options = {
     name: 'arkOS Assistant',
