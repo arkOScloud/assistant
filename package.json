@@ -55,7 +55,7 @@
   "dependencies": {
     "bonjour": "^3.2.2",
     "drivelist": "^3.0.0",
-    "electron-sudo": "^3.0.3",
+    "electron-sudo": "git+https://github.com/peakwinter/electron-sudo.git",
     "path": "^0.12.7",
     "request": "^2.70.0",
     "request-progress": "^2.0.1",
