@@ -40,7 +40,7 @@ app.on('ready', function onReady() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
-    icon: __dirname + 'dist/includes/icon.png'
+    icon: __dirname + 'includes/icon.png'
   });
 
   if (process.platform === "linux" && process.env.PATH.indexOf(":/sbin") === -1) {
