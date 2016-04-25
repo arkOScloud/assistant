@@ -22,6 +22,7 @@ const Transform        = require("stream").Transform;
 const drivelist        = require('drivelist');
 const request          = require('request');
 const readline         = require('readline');
+const child_process    = require('child_process');
 const requestProgress  = require('request-progress');
 
 let mainWindow = null;
@@ -336,29 +337,90 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   var nodePath = process.execPath;
   image1 = path.join(app.getPath('downloads'), image1);
   image2 = image2 ? path.join(app.getPath('downloads'), image2) : null;
-  if (process.platform === 'darwin') {
-    var appName = app.getName();
-    device1.device = '/dev/rdisk' + device1.device.slice(-1)[0];
-    if (device2) {
-      device2.device = '/dev/rdisk' + device2.device.slice(-1)[0];
-    }
-    if (nodePath.indexOf("/Electron.app/") >= 0) {
-      appName = 'Electron';
-    }
-    nodePath = path.resolve(process.resourcesPath, '..', 'Frameworks',
-      appName + ' Helper.app', 'Contents', 'MacOS', appName + ' Helper');
-    cmd = `"\\\"${nodePath}\\\" \\\"${__dirname}/includes/disk-write.js\\\" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
-    if (device2 && image2) {
-      cmd += ` ${device2.device} \\\"${image2}\\\" ${device2.mountpoint}`;
-    }
-    cmd += '"';
-  } else {
-    cmd = `"${nodePath}" "${__dirname}/includes/disk-write.js" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
-    if (device2 && image2) {
-      cmd += ` ${device2.device} "${image2}" ${device2.mountpoint}`;
-    }
+
+  switch (process.platform) {
+    case 'darwin':
+      var appName = app.getName();
+      device1.device = '/dev/rdisk' + device1.device.slice(-1)[0];
+      if (device2) {
+        device2.device = '/dev/rdisk' + device2.device.slice(-1)[0];
+      }
+      if (nodePath.indexOf("/Electron.app/") >= 0) {
+        appName = 'Electron';
+      }
+      nodePath = path.resolve(process.resourcesPath, '..', 'Frameworks',
+        appName + ' Helper.app', 'Contents', 'MacOS', appName + ' Helper');
+      cmd = `"\\\"${nodePath}\\\" \\\"${__dirname}/includes/disk-write.js\\\" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+      if (device2 && image2) {
+        cmd += ` ${device2.device} \\\"${image2}\\\" ${device2.mountpoint}`;
+      }
+      cmd += '"';
+      break;
+    case 'win32':
+      cmd = `"${nodePath}" "${__dirname}/includes/disk-write.js" ${process.platform} ${device1.device} ${image1} ${device1.mountpoint}`;
+      if (device2 && image2) {
+        cmd += ` ${device2.device} "${image2}" ${device2.mountpoint}`;
+      }
+      break;
+    default:
+      // linux
+      cmd = ["env", "ELECTRON_RUN_AS_NODE=1", "ELECTRON_NO_ATTACH_CONSOLE=1", nodePath,
+        `${__dirname}/includes/disk-write.js`, process.platform, device1.device, image1,
+        device1.mountpoint];
+      if (device2 && image2) {
+        cmd.concat([device2.device, image2, device2.mountpoint]);
+      }
+      break;
   }
   console.log('Command will be: ' + cmd);
+
+  var onWriteError = function(err) {
+    err = typeof err === "string" ? err : err.toString();
+    if (err && err !== 'sudo: a password is required\n' && err !== 'null') {
+      console.log('Disk write failed: ' + err);
+      dialog.showErrorBox('Disk Write Error', err);
+      mainWindow.loadURL(emberAppLocation);
+    }
+  };
+
+  var handleStreams = function(proc) {
+    readline.createInterface({
+      input     : proc.stdout,
+      terminal  : false
+    }).on('line', function(line) {
+      if (processAbortFlag) {
+        proc.stdout.unpipe();
+        proc.kill();
+      } else {
+        if (line.startsWith('{') && line.endsWith('}')) {
+          var progress = JSON.parse(line);
+          if (progress) {
+            mainWindow.setProgressBar(progress.percent / 100);
+          }
+          event.sender.send('updateWriteProgress', progress);
+        }
+      }
+    });
+    proc.stderr.on('data', function(data) {
+      if (data) {
+        stderr += data;
+      }
+    });
+    proc.on('close', function(code) {
+      if (code === 0) {
+        mainWindow.setProgressBar(-1);
+        event.sender.send('updateWriteProgress', null);
+        console.log('Disk write complete');
+        event.sender.send('diskWriteDone', 'pass');
+      } else if (processAbortFlag) {
+        console.log('Disk write aborted');
+        processAbortFlag = false;
+      } else {
+        onWriteError(stderr);
+      }
+    });
+  };
+
   var options = {
     name: 'arkOS Assistant',
     icns: `${__dirname}/includes/icon.icns`,
@@ -370,41 +432,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
         }
       },
       on: function(ps) {
-        readline.createInterface({
-          input     : ps.stdout,
-          terminal  : false
-        }).on('line', function(line) {
-          if (processAbortFlag) {
-            ps.stdout.unpipe();
-            ps.kill();
-          } else {
-            if (line.startsWith('{') && line.endsWith('}')) {
-              var progress = JSON.parse(line);
-              if (progress) {
-                mainWindow.setProgressBar(progress.percent / 100);
-              }
-              event.sender.send('updateWriteProgress', progress);
-            }
-          }
-        });
-        ps.stderr.on('data', function(data) {
-          if (data) {
-            stderr += data;
-          }
-        });
-        ps.on('close', function(code) {
-          if (code === 0) {
-            mainWindow.setProgressBar(-1);
-            event.sender.send('updateWriteProgress', null);
-            console.log('Disk write complete');
-            event.sender.send('diskWriteDone', 'pass');
-          } else if (processAbortFlag) {
-            console.log('Disk write aborted');
-            processAbortFlag = false;
-          } else {
-            onWriteError(stderr);
-          }
-        });
+        handleStreams(ps);
       }
     }
   };
@@ -413,23 +441,25 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
   console.log('Beginning disk write');
   mainWindow.setProgressBar(2);
   event.sender.send('updateWriteProgress', {percent: 100});
-  sudo.exec(cmd, options, function(err) {
-    mainWindow.setProgressBar(-1);
-    event.sender.send('updateWriteProgress', null);
-    if (err) {
-      onWriteError(err);
-    }
-  });
-});
 
-var onWriteError = function(err) {
-  err = typeof err === "string" ? err : err.toString();
-  if (err && err !== 'sudo: a password is required\n' && err !== 'null') {
-    console.log('Disk write failed: ' + err);
-    dialog.showErrorBox('Disk Write Error', err);
-    mainWindow.loadURL(emberAppLocation);
+  switch (process.platform) {
+    case 'darwin':
+    case 'win32':
+      sudo.exec(cmd, options, function(err) {
+        mainWindow.setProgressBar(-1);
+        event.sender.send('updateWriteProgress', null);
+        if (err) {
+          onWriteError(err);
+        }
+      });
+      break;
+    default:
+      // linux
+      var ps = child_process.spawn("/usr/bin/pkexec", ['--disable-internal-agent'].concat(cmd.split(' ')));
+      handleStreams(ps);
+      break;
   }
-};
+});
 
 ipc.on('removeDownloadedFiles', function() {
   fs.stat(zipPath, function(err, stats) {

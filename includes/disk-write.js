@@ -33,7 +33,7 @@ var unmountDisk = function(device) {
         input: fs.createReadStream('/etc/mtab')
       });
       lineReader.on('line', function (line) {
-        var dpart = line.split(" +");
+        var dpart = line.split(/ +/);
         if (dpart[1] && dpart[1].startsWith(device.path)) {
           child_process.execSync(`umount -l ${dpart[1]}`);
         }
@@ -71,5 +71,13 @@ var writeImage = function(device, nextDevice) {
     }
   });
 };
+
+var stdinData = '';
+process.stdin.on('data', function(data) {
+  stdinData += data;
+  if (stdinData === 'KILL') {
+    process.exit(1);
+  }
+});
 
 writeImage(dev1Obj, dev2Obj);
