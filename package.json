@@ -55,6 +55,7 @@
   "dependencies": {
     "bonjour": "^3.2.2",
     "drivelist": "git+https://github.com/peakwinter/drivelist.git",
+    "electron-squirrel-startup": "^0.1.4",
     "electron-sudo": "git+https://github.com/peakwinter/electron-sudo.git",
     "path": "^0.12.7",
     "request": "^2.70.0",
