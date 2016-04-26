@@ -101,7 +101,7 @@ ipc.on('getDevices', function(event) {
   var devices = [];
   drivelist.list(function(err, drives) {
     devices = drives.filter(function(drive) {
-      return !drive.system;
+      return process.platform === 'win32' ? drive.name !== "C:" : !drive.system;
     });
     event.sender.send('gotDevices', devices);
   });
