@@ -455,7 +455,7 @@ ipc.on('writeDisks', function(event, image1, device1, image2, device2) {
       break;
     default:
       // linux
-      var ps = child_process.spawn("/usr/bin/pkexec", ['--disable-internal-agent'].concat(cmd.split(' ')));
+      var ps = child_process.spawn("/usr/bin/pkexec", ['--disable-internal-agent'].concat(cmd));
       handleStreams(ps);
       break;
   }
